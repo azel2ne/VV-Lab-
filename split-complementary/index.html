@@ -1,0 +1,115 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Split Complementary ID</title>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.3/lib/p5.min.js"></script>
+</head>
+<body style="margin:0;background:#111;">
+<script>
+  // ---------- RYB hue -> RGB (simple, good-looking for branding prototypes)
+  // RYB anchors around the wheel (0..360)
+  // 0: Red, 60: Orange, 120: Yellow, 180: Green, 240: Blue, 300: Purple, 360: Red
+  const RYB_ANCHORS = [
+    { h: 0,   rgb: [255,   0,   0] },   // Red
+    { h: 60,  rgb: [255, 128,   0] },   // Orange
+    { h: 120, rgb: [255, 255,   0] },   // Yellow
+    { h: 180, rgb: [  0, 170,  90] },   // Green (slightly muted for nicer mix)
+    { h: 240, rgb: [  0,  90, 255] },   // Blue
+    { h: 300, rgb: [140,   0, 255] },   // Purple
+    { h: 360, rgb: [255,   0,   0] }    // Wrap to Red
+  ];
+
+  function lerpRGB(a, b, t) {
+    return [
+      a[0] + (b[0] - a[0]) * t,
+      a[1] + (b[1] - a[1]) * t,
+      a[2] + (b[2] - a[2]) * t
+    ];
+  }
+
+  function rybHueToRgb(h) {
+    h = ((h % 360) + 360) % 360;
+    for (let i = 0; i < RYB_ANCHORS.length - 1; i++) {
+      const A = RYB_ANCHORS[i], B = RYB_ANCHORS[i + 1];
+      if (h >= A.h && h <= B.h) {
+        const t = (h - A.h) / (B.h - A.h);
+        return lerpRGB(A.rgb, B.rgb, t);
+      }
+    }
+    return [255, 0, 0];
+  }
+
+  function setup() {
+    createCanvas(windowWidth, windowHeight);
+    textAlign(CENTER, CENTER);
+    textStyle(BOLD);
+  }
+
+  function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+  }
+
+  function draw() {
+    background(16);
+
+    // ----- Controls
+    const baseHue = map(constrain(mouseX, 0, width), 0, width, 0, 360);   // RYB hue
+    const delta   = map(constrain(mouseY, 0, height), 0, height, 8, 28);  // how close the two boxes are
+
+    // Analogous (similar) hues for two boxes
+    const h1 = baseHue - delta;
+    const h2 = baseHue + delta;
+
+    // Split complementary "center" (midpoint between the two split complements)
+    // For a single text color, this gives you the clean yellow when base is purple.
+    const textHue = baseHue + 180;
+
+    const c1 = rybHueToRgb(h1);
+    const c2 = rybHueToRgb(h2);
+    const tc = rybHueToRgb(textHue);
+
+    // ----- Layout
+    const pad = min(width, height) * 0.08;
+    const frameW = min(width, height) * 0.72;
+    const frameH = frameW * 0.42;
+    const frameX = (width - frameW) / 2;
+    const frameY = (height - frameH) / 2;
+
+    const gap = frameW * 0.08;
+    const sqSize = min((frameW - gap * 3) / 2, frameH - gap * 2);
+    const sqY = frameY + (frameH - sqSize) / 2;
+    const sq1X = frameX + gap;
+    const sq2X = frameX + gap * 2 + sqSize;
+
+    // Frame
+    noFill();
+    stroke(235);
+    strokeWeight(3);
+    rect(frameX, frameY, frameW, frameH, 18);
+    noStroke();
+
+    // Squares
+    fill(c1[0], c1[1], c1[2]);
+    rect(sq1X, sqY, sqSize, sqSize, 14);
+
+    fill(c2[0], c2[1], c2[2]);
+    rect(sq2X, sqY, sqSize, sqSize, 14);
+
+    // Text color = split-complementary result (single)
+    fill(tc[0], tc[1], tc[2]);
+    textSize(sqSize * 0.62);
+    text("i", sq1X + sqSize / 2, sqY + sqSize / 2 + sqSize * 0.02);
+    text("d", sq2X + sqSize / 2, sqY + sqSize / 2 + sqSize * 0.02);
+
+    // Optional label
+    fill(220);
+    textStyle(NORMAL);
+    textSize(14);
+    const msg = `RYB baseHue=${baseHue.toFixed(0)}°, boxes=±${delta.toFixed(0)}°, text = base+180° (split-comp midpoint)`;
+    text(msg, width / 2, frameY + frameH + 28);
+    textStyle(BOLD);
+  }
+</script>
+</body>
+</html>
